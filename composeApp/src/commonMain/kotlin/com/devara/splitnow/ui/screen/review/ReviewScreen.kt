@@ -56,6 +56,7 @@ import org.koin.compose.koinInject
 @Composable
 fun ReviewScreen(
     onBack: () -> Unit,
+    onDone: () -> Unit,
     onShare: () -> Unit,
     onEditItem: (Long) -> Unit,
     onAddItem: (String?) -> Unit,
@@ -81,7 +82,19 @@ fun ReviewScreen(
     flow.splitMode = mode
 
     Column(modifier = Modifier.fillMaxSize().background(t.bg)) {
-        FlowNav(title = "Review", onBack = onBack)
+        FlowNav(
+            title = "Review",
+            onBack = onBack,
+            trailing = {
+                Text(
+                    "Done",
+                    color = t.accent,
+                    fontWeight = FontWeight.W700,
+                    fontSize = 16.sp,
+                    modifier = Modifier.clickable { onDone() },
+                )
+            },
+        )
 
         Column(
             modifier = Modifier

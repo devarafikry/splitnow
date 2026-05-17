@@ -53,7 +53,11 @@ import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 @Composable
-fun ShareScreen(onBack: () -> Unit) {
+fun ShareScreen(
+    paymentMethodId: Long? = null,
+    onBack: () -> Unit,
+    onDone: () -> Unit,
+) {
     val t = SplitNowTokens.colors
     val flow = koinInject<SplitFlowState>()
     val repo = koinInject<SplitRepository>()
@@ -64,10 +68,24 @@ fun ShareScreen(onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
     val graphicsLayer = rememberGraphicsLayer()
     val paymentMethods by repo.observePaymentMethods().collectAsState(initial = emptyList())
-    val defaultMethod = paymentMethods.firstOrNull { it.isDefault } ?: paymentMethods.firstOrNull()
+    val defaultMethod = paymentMethodId?.let { id -> paymentMethods.firstOrNull { it.id == id } }
+        ?: paymentMethods.firstOrNull { it.isDefault }
+        ?: paymentMethods.firstOrNull()
 
     Column(modifier = Modifier.fillMaxSize().background(t.bg)) {
-        FlowNav(title = "Share", onBack = onBack)
+        FlowNav(
+            title = "Share",
+            onBack = onBack,
+            trailing = {
+                Text(
+                    "Done",
+                    color = t.accent,
+                    fontWeight = FontWeight.W700,
+                    fontSize = 16.sp,
+                    modifier = Modifier.clickable { onDone() },
+                )
+            },
+        )
         Box(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             contentAlignment = Alignment.Center,

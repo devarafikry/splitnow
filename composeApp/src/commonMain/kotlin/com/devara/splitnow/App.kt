@@ -3,13 +3,11 @@ package com.devara.splitnow
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -17,9 +15,12 @@ import androidx.navigation.compose.rememberNavController
 import com.devara.splitnow.ai.SplitParser
 import com.devara.splitnow.data.PREF_ONBOARDED
 import com.devara.splitnow.data.SettingsStore
+import com.devara.splitnow.platform.UrlOpener
 import com.devara.splitnow.scan.TextRecognizer
 import com.devara.splitnow.ui.flow.SplitFlowState
 import com.devara.splitnow.ui.screen.describe.DescribeScreen
+import com.devara.splitnow.ui.screen.history.HistoryDetailScreen
+import com.devara.splitnow.ui.screen.history.HistoryListScreen
 import com.devara.splitnow.ui.screen.home.HomeScreen
 import com.devara.splitnow.ui.screen.loading.LoadingScreen
 import com.devara.splitnow.ui.screen.onboarding.OnboardingScreen
@@ -27,9 +28,13 @@ import com.devara.splitnow.ui.screen.review.EditChargeModal
 import com.devara.splitnow.ui.screen.review.EditItemModal
 import com.devara.splitnow.ui.screen.review.ReviewScreen
 import com.devara.splitnow.ui.screen.scan.ScanScreen
+import com.devara.splitnow.ui.screen.settings.CurrencyPickerScreen
 import com.devara.splitnow.ui.screen.settings.EditPaymentScreen
+import com.devara.splitnow.ui.screen.settings.LanguagePickerScreen
 import com.devara.splitnow.ui.screen.settings.PaymentMethodsScreen
 import com.devara.splitnow.ui.screen.settings.SettingsScreen
+import com.devara.splitnow.ui.screen.settings.ThemePickerScreen
+import com.devara.splitnow.ui.screen.share.PickPaymentScreen
 import com.devara.splitnow.ui.screen.share.ShareScreen
 import com.devara.splitnow.ui.theme.SplitNowTheme
 import kotlinx.coroutines.launch
@@ -42,10 +47,16 @@ private object Routes {
     const val DESCRIBE = "describe"
     const val LOADING = "loading"
     const val REVIEW = "review"
+    const val PICK_PAYMENT = "pick_payment"
     const val SHARE = "share"
     const val SETTINGS = "settings"
     const val PAYMENT_METHODS = "payment_methods"
     const val EDIT_PAYMENT = "edit_payment"
+    const val CURRENCY = "currency"
+    const val THEME = "theme"
+    const val LANGUAGE = "language"
+    const val HISTORY = "history"
+    const val HISTORY_DETAIL = "history_detail"
     const val EDIT_ITEM = "edit_item"
     const val EDIT_CHARGE = "edit_charge"
 }
@@ -58,14 +69,18 @@ fun App() {
         val flow = koinInject<SplitFlowState>()
         val recognizer = koinInject<TextRecognizer>()
         val parser = koinInject<SplitParser>()
+        val urlOpener = koinInject<UrlOpener>()
         val scope = rememberCoroutineScope()
         val onboarded = remember { settings.getBoolean(PREF_ONBOARDED, false) }
         val startDest = if (onboarded) Routes.HOME else Routes.ONBOARDING
 
-        // Holds modal context: itemId|null + presetAssignedTo.
         var editItemArgs by remember { mutableStateOf<Pair<Long?, String?>>(null to null) }
         var editChargeId by remember { mutableStateOf<Long?>(null) }
         var editPaymentId by remember { mutableStateOf<Long?>(null) }
+        var historyDetailId by remember { mutableStateOf<Long?>(null) }
+        var chosenPaymentId by remember { mutableStateOf<Long?>(null) }
+        // After EditPayment from PickPayment, we want to come back to PickPayment.
+        var addPaymentReturnsToPick by remember { mutableStateOf(false) }
 
         Box(modifier = Modifier.fillMaxSize()) {
             NavHost(navController = nav, startDestination = startDest) {
@@ -82,7 +97,7 @@ fun App() {
                             flow.reset()
                             nav.navigate(Routes.SCAN)
                         },
-                        onOpenSplit = { _ -> /* History detail deferred */ },
+                        onHistory = { nav.navigate(Routes.HISTORY) },
                     )
                 }
                 composable(Routes.SCAN) {
@@ -90,10 +105,7 @@ fun App() {
                         onClose = { nav.popBackStack() },
                         onCaptured = { bytes ->
                             flow.capturedImage = bytes
-                            // OCR runs in the background; user goes straight to Describe.
-                            scope.launch {
-                                flow.ocrText = recognizer.recognize(bytes)
-                            }
+                            scope.launch { flow.ocrText = recognizer.recognize(bytes) }
                             nav.navigate(Routes.DESCRIBE)
                         },
                     )
@@ -132,12 +144,30 @@ fun App() {
                 composable(Routes.REVIEW) {
                     ReviewScreen(
                         onBack = { nav.popBackStack() },
-                        onShare = { nav.navigate(Routes.SHARE) },
+                        onDone = {
+                            flow.reset()
+                            nav.popBackStack(Routes.HOME, inclusive = false)
+                        },
+                        onShare = { nav.navigate(Routes.PICK_PAYMENT) },
                         onEditItem = { id -> editItemArgs = id to null; nav.navigate(Routes.EDIT_ITEM) },
                         onAddItem = { who -> editItemArgs = null to who; nav.navigate(Routes.EDIT_ITEM) },
                         onAddShared = { editItemArgs = null to "Shared"; nav.navigate(Routes.EDIT_ITEM) },
                         onEditCharge = { id -> editChargeId = id; nav.navigate(Routes.EDIT_CHARGE) },
                         onAddCharge = { editChargeId = null; nav.navigate(Routes.EDIT_CHARGE) },
+                    )
+                }
+                composable(Routes.PICK_PAYMENT) {
+                    PickPaymentScreen(
+                        onBack = { nav.popBackStack() },
+                        onContinue = { id ->
+                            chosenPaymentId = id
+                            nav.navigate(Routes.SHARE)
+                        },
+                        onAddNew = {
+                            editPaymentId = null
+                            addPaymentReturnsToPick = true
+                            nav.navigate(Routes.EDIT_PAYMENT)
+                        },
                     )
                 }
                 composable(Routes.EDIT_ITEM) {
@@ -156,30 +186,72 @@ fun App() {
                     )
                 }
                 composable(Routes.SHARE) {
-                    ShareScreen(onBack = { nav.popBackStack() })
+                    ShareScreen(
+                        paymentMethodId = chosenPaymentId,
+                        onBack = { nav.popBackStack() },
+                        onDone = {
+                            flow.reset()
+                            chosenPaymentId = null
+                            nav.popBackStack(Routes.HOME, inclusive = false)
+                        },
+                    )
                 }
                 composable(Routes.SETTINGS) {
                     SettingsScreen(
                         onBack = { nav.popBackStack() },
                         onPaymentMethods = { nav.navigate(Routes.PAYMENT_METHODS) },
-                        onCurrency = {},
-                        onTheme = {},
-                        onPrivacy = {},
-                        onAbout = {},
+                        onCurrency = { nav.navigate(Routes.CURRENCY) },
+                        onLanguage = { nav.navigate(Routes.LANGUAGE) },
+                        onTheme = { nav.navigate(Routes.THEME) },
+                        onPrivacy = { urlOpener.open("https://splitnow.devalab.app/privacy") },
+                        onHelp = { urlOpener.open("mailto:hello@devalab.app?subject=SplitNow%20feedback") },
                     )
                 }
                 composable(Routes.PAYMENT_METHODS) {
                     PaymentMethodsScreen(
                         onBack = { nav.popBackStack() },
-                        onAdd = { editPaymentId = null; nav.navigate(Routes.EDIT_PAYMENT) },
-                        onEdit = { id -> editPaymentId = id; nav.navigate(Routes.EDIT_PAYMENT) },
+                        onAdd = { editPaymentId = null; addPaymentReturnsToPick = false; nav.navigate(Routes.EDIT_PAYMENT) },
+                        onEdit = { id -> editPaymentId = id; addPaymentReturnsToPick = false; nav.navigate(Routes.EDIT_PAYMENT) },
                     )
                 }
                 composable(Routes.EDIT_PAYMENT) {
                     EditPaymentScreen(
                         methodId = editPaymentId,
                         onBack = { nav.popBackStack() },
-                        onSaved = { nav.popBackStack() },
+                        onSaved = {
+                            if (addPaymentReturnsToPick) {
+                                addPaymentReturnsToPick = false
+                                nav.popBackStack(Routes.PICK_PAYMENT, inclusive = false)
+                            } else {
+                                nav.popBackStack()
+                            }
+                        },
+                    )
+                }
+                composable(Routes.CURRENCY) {
+                    CurrencyPickerScreen(onBack = { nav.popBackStack() })
+                }
+                composable(Routes.THEME) {
+                    ThemePickerScreen(onBack = { nav.popBackStack() })
+                }
+                composable(Routes.LANGUAGE) {
+                    LanguagePickerScreen(onBack = { nav.popBackStack() })
+                }
+                composable(Routes.HISTORY) {
+                    HistoryListScreen(
+                        onBack = { nav.popBackStack() },
+                        onOpen = { id -> historyDetailId = id; nav.navigate(Routes.HISTORY_DETAIL) },
+                    )
+                }
+                composable(Routes.HISTORY_DETAIL) {
+                    val id = historyDetailId ?: 0L
+                    HistoryDetailScreen(
+                        splitId = id,
+                        onBack = { nav.popBackStack() },
+                        onShare = {
+                            chosenPaymentId = null
+                            nav.navigate(Routes.PICK_PAYMENT)
+                        },
                     )
                 }
             }

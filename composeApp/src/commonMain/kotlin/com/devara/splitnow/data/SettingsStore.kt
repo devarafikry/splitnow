@@ -10,5 +10,6 @@ expect class SettingsStore() {
 
 const val PREF_DEFAULT_CURRENCY = "default_currency"
 const val PREF_THEME = "theme" // "system" | "light" | "dark"
+const val PREF_LOCALE = "locale" // e.g. "en", "id", "ja", "zh-Hans"
 const val PREF_ONBOARDED = "onboarded"
 const val PREF_GEMINI_KEY_OVERRIDE = "gemini_key_override"

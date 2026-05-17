@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 200 200">
+  <!-- SplitNow mark — coral. Source vector is 100x100 stretched to 200x200. -->
+  <g transform="scale(2)">
+    <circle cx="28" cy="32" r="9" fill="#F25A2B"/>
+    <line x1="22" y1="78" x2="78" y2="22" stroke="#F25A2B" stroke-width="22" stroke-linecap="round"/>
+    <circle cx="72" cy="68" r="9" fill="#F25A2B"/>
+  </g>
+</svg>

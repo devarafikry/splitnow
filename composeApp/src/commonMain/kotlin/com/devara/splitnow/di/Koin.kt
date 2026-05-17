@@ -7,6 +7,8 @@ import com.devara.splitnow.data.SettingsStore
 import com.devara.splitnow.data.SplitNowDatabase
 import com.devara.splitnow.data.SplitRepository
 import com.devara.splitnow.data.roomDatabaseBuilder
+import com.devara.splitnow.l10n.Translator
+import com.devara.splitnow.platform.UrlOpener
 import com.devara.splitnow.scan.TextRecognizer
 import com.devara.splitnow.share.SharePngLauncher
 import com.devara.splitnow.ui.flow.SplitFlowState
@@ -36,4 +38,6 @@ private val commonModule = module {
     single { TextRecognizer() }
     single { SharePngLauncher() }
     single { SplitFlowState() }
+    single { Translator(get(), get()) }
+    single { UrlOpener() }
 }

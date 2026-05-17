@@ -84,33 +84,60 @@ fun ScanScreen(
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 130.dp),
         )
 
-        // Receipt preview placeholder
+        // Neutral receipt placeholder — gray bars, no merchant text or items
         Box(
             modifier = Modifier
                 .align(Alignment.Center)
                 .size(240.dp, 360.dp)
                 .clip(RoundedCornerShape(6.dp))
                 .background(Color(0xFFF4F1EA))
-                .padding(18.dp),
+                .padding(20.dp),
         ) {
             Column {
-                Text("WARUNG SEDERHANA", color = Color(0xFF2A2823), fontWeight = FontWeight.W700, fontSize = 11.sp, letterSpacing = 1.sp)
-                Spacer(Modifier.height(6.dp))
-                Text("Jl. Sabang No. 24", color = Color(0xFF2A2823).copy(alpha = 0.6f), fontSize = 9.sp)
-                Spacer(Modifier.height(10.dp))
-                listOf(
-                    "Nasi Goreng Pedas" to "32.000",
-                    "Nasi Goreng Seafood" to "38.000",
-                    "Es Teh Manis" to "8.000",
-                    "Air Putih" to "5.000",
-                    "Kerupuk" to "4.000",
-                ).forEach { (n, p) ->
-                    Row(modifier = Modifier.fillMaxWidth()) {
-                        Text(n, color = Color(0xFF2A2823), fontSize = 10.sp)
-                        Spacer(Modifier.weight(1f))
-                        Text(p, color = Color(0xFF2A2823), fontSize = 10.sp)
-                    }
-                    Spacer(Modifier.height(2.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.55f)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color(0xFF2A2823).copy(alpha = 0.42f)),
+                )
+                Spacer(Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.35f)
+                        .height(5.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Color(0xFF2A2823).copy(alpha = 0.22f)),
+                )
+                Spacer(Modifier.height(20.dp))
+                val widths = listOf(0.78f, 0.62f, 0.85f, 0.55f, 0.70f, 0.50f)
+                widths.forEach { w ->
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(w)
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color(0xFF2A2823).copy(alpha = 0.30f)),
+                    )
+                    Spacer(Modifier.height(10.dp))
+                }
+                Spacer(Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.25f)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color(0xFF2A2823).copy(alpha = 0.55f)),
+                    )
+                    Spacer(Modifier.weight(1f))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.32f)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color(0xFF2A2823).copy(alpha = 0.55f)),
+                    )
                 }
             }
         }

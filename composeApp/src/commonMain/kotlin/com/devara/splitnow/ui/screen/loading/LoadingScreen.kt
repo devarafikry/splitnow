@@ -34,12 +34,16 @@ fun LoadingScreen() {
     Box(modifier = Modifier.fillMaxSize().background(t.bg), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             val transition = rememberInfiniteTransition()
+            // Reverse mode so the pulse breathes — no abrupt scale snap at loop boundary.
             val pulse by transition.animateFloat(
-                initialValue = 0.85f,
-                targetValue = 1.25f,
+                initialValue = 0.92f,
+                targetValue = 1.12f,
                 animationSpec = infiniteRepeatable(
-                    animation = tween(durationMillis = 1600),
-                    repeatMode = RepeatMode.Restart,
+                    animation = tween(
+                        durationMillis = 1100,
+                        easing = androidx.compose.animation.core.FastOutSlowInEasing,
+                    ),
+                    repeatMode = RepeatMode.Reverse,
                 ),
             )
             Box(contentAlignment = Alignment.Center) {

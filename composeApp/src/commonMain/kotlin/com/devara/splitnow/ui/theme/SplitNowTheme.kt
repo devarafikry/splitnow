@@ -6,12 +6,23 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import com.devara.splitnow.data.PREF_THEME
+import com.devara.splitnow.data.SettingsStore
+import org.koin.compose.koinInject
 
 @Composable
 fun SplitNowTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
+    val systemDark = isSystemInDarkTheme()
+    val settings = koinInject<SettingsStore>()
+    val themePref = remember { settings.getString(PREF_THEME, "system") ?: "system" }
+    val darkTheme = when (themePref) {
+        "light" -> false
+        "dark" -> true
+        else -> systemDark
+    }
     val tokens = if (darkTheme) SplitNowDarkColors else SplitNowLightColors
     val material = if (darkTheme) {
         darkColorScheme(

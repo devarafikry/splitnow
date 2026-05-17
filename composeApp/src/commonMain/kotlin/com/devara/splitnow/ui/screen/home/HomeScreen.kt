@@ -58,7 +58,7 @@ import org.koin.compose.koinInject
 fun HomeScreen(
     onSettings: () -> Unit,
     onNewSplit: () -> Unit,
-    onOpenSplit: (Long) -> Unit,
+    onHistory: () -> Unit,
 ) {
     val t = SplitNowTokens.colors
     val repo = koinInject<SplitRepository>()
@@ -111,12 +111,12 @@ fun HomeScreen(
                     .padding(horizontal = 16.dp)
                     .clip(RoundedCornerShape(20.dp))
                     .background(t.surface2)
-                    .clickable { onOpenSplit(latest.id) }
+                    .clickable { onHistory() }
                     .padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("LATEST", color = t.ink3, fontSize = 10.sp, fontWeight = FontWeight.W700, letterSpacing = 1.2.sp)
+                    Text("HISTORY", color = t.ink3, fontSize = 10.sp, fontWeight = FontWeight.W700, letterSpacing = 1.2.sp)
                     Spacer(Modifier.height(2.dp))
                     Text(latest.restaurantName, color = t.ink, fontWeight = FontWeight.W600, fontSize = 15.sp)
                 }
