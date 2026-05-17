@@ -91,7 +91,7 @@ fun OnboardingScreen(onGetStarted: () -> Unit) {
                 label = "Get started",
                 onClick = onGetStarted,
                 background = Color(0xFF0F0E0C),
-                foreground = t.brandInk,
+                foreground = Color(0xFFFFFFFF),
             )
         }
     }

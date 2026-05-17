@@ -4,17 +4,19 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- SplitNow mark: stylized % - two dots + diagonal coral slash -->
-    <!-- Scaled to 108x108 viewport, centered in 60% safe zone -->
-    <group android:scaleX="0.6" android:scaleY="0.6" android:translateX="21.6" android:translateY="21.6">
-        <path
-            android:fillColor="#F25A2B"
-            android:pathData="M28,32 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0" />
-        <path
-            android:fillColor="#F25A2B"
-            android:pathData="M28.43,69.43 L78.43,19.43 L71.57,12.57 L21.57,62.57 z" />
-        <path
-            android:fillColor="#F25A2B"
-            android:pathData="M72,68 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0" />
+    <!-- SplitNow brand mark: two coral circles + diagonal slash. Source viewBox 100x100. -->
+    <!-- Translate to (24, 24) and scale 0.6 so it sits in the 60% safe-zone center. -->
+    <group android:translateX="24" android:translateY="24" android:scaleX="0.6" android:scaleY="0.6">
+        <!-- Top-left circle (28,32) r=9 -->
+        <path android:fillColor="#F25A2B"
+              android:pathData="M 28,23 m -9,0 a 9,9 0 1,0 18,0 a 9,9 0 1,0 -18,0 z"/>
+        <!-- Diagonal slash from (22,78) to (78,22), stroke width 22, round caps -->
+        <path android:strokeColor="#F25A2B"
+              android:strokeWidth="22"
+              android:strokeLineCap="round"
+              android:pathData="M 22,78 L 78,22"/>
+        <!-- Bottom-right circle (72,68) r=9 -->
+        <path android:fillColor="#F25A2B"
+              android:pathData="M 72,59 m -9,0 a 9,9 0 1,0 18,0 a 9,9 0 1,0 -18,0 z"/>
     </group>
 </vector>

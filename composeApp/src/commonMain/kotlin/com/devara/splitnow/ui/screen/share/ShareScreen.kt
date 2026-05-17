@@ -118,7 +118,7 @@ fun ShareScreen(onBack: () -> Unit) {
                 },
                 background = t.ink,
                 height = 64,
-                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, tint = Color.White) },
+                leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, tint = t.bg) },
             )
         }
     }

@@ -41,7 +41,9 @@ fun PrimaryButton(
 ) {
     val t = SplitNowTokens.colors
     val bg = (background ?: t.ink).let { if (enabled) it else it.copy(alpha = 0.6f) }
-    val fg = foreground ?: Color.White
+    // Default foreground = the inverted ink so the text contrasts the ink-bg
+    // in both light and dark mode (light: white-on-dark; dark: dark-on-near-white).
+    val fg = foreground ?: t.bg
     val source = remember { MutableInteractionSource() }
     Row(
         modifier = modifier

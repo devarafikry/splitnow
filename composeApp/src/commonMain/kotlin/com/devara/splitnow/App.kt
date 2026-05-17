@@ -22,7 +22,6 @@ import com.devara.splitnow.ui.flow.SplitFlowState
 import com.devara.splitnow.ui.screen.describe.DescribeScreen
 import com.devara.splitnow.ui.screen.home.HomeScreen
 import com.devara.splitnow.ui.screen.loading.LoadingScreen
-import com.devara.splitnow.ui.screen.ocr.OCRReviewScreen
 import com.devara.splitnow.ui.screen.onboarding.OnboardingScreen
 import com.devara.splitnow.ui.screen.review.EditChargeModal
 import com.devara.splitnow.ui.screen.review.EditItemModal
@@ -40,7 +39,6 @@ private object Routes {
     const val ONBOARDING = "onboarding"
     const val HOME = "home"
     const val SCAN = "scan"
-    const val OCR = "ocr"
     const val DESCRIBE = "describe"
     const val LOADING = "loading"
     const val REVIEW = "review"
@@ -92,18 +90,12 @@ fun App() {
                         onClose = { nav.popBackStack() },
                         onCaptured = { bytes ->
                             flow.capturedImage = bytes
-                            // Run OCR async; navigate to OCR review when done.
+                            // OCR runs in the background; user goes straight to Describe.
                             scope.launch {
                                 flow.ocrText = recognizer.recognize(bytes)
-                                nav.navigate(Routes.OCR)
                             }
+                            nav.navigate(Routes.DESCRIBE)
                         },
-                    )
-                }
-                composable(Routes.OCR) {
-                    OCRReviewScreen(
-                        onBack = { nav.popBackStack() },
-                        onContinue = { nav.navigate(Routes.DESCRIBE) },
                     )
                 }
                 composable(Routes.DESCRIBE) {
@@ -115,19 +107,18 @@ fun App() {
                             scope.launch {
                                 runCatching {
                                     val parsed = parser.parse(flow.ocrText, description, flow.currency)
-                                    val (items, charges, people) = parser.toDomain(parsed, flow.currency)
-                                    // Assign synthetic ids so we can edit later.
+                                    val quad = parser.toDomain(parsed, flow.currency)
+                                    flow.currency = quad.currency
                                     flow.items.clear()
-                                    items.forEachIndexed { i, it -> flow.items.add(it.copy(id = (i + 1).toLong())) }
+                                    quad.items.forEachIndexed { i, it -> flow.items.add(it.copy(id = (i + 1).toLong())) }
                                     flow.charges.clear()
-                                    charges.forEachIndexed { i, c -> flow.charges.add(c.copy(id = (i + 1).toLong())) }
+                                    quad.charges.forEachIndexed { i, c -> flow.charges.add(c.copy(id = (i + 1).toLong())) }
                                     flow.people.clear()
-                                    flow.people.addAll(people.ifEmpty { listOf("You", "Friend") })
+                                    flow.people.addAll(quad.people.ifEmpty { listOf("You", "Friend") })
                                     flow.restaurantName = parsed.restaurantName.ifBlank { "Receipt" }
                                     nav.navigate(Routes.REVIEW) { popUpTo(Routes.SCAN) { inclusive = true } }
                                 }.onFailure { e ->
                                     flow.error = e.message
-                                    // For now, fall through to manual review with empty data.
                                     flow.items.clear(); flow.charges.clear()
                                     flow.people.clear()
                                     flow.people.addAll(listOf("You", "Friend"))

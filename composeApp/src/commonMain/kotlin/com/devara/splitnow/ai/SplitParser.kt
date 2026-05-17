@@ -55,12 +55,14 @@ class SplitParser(private val client: GeminiClient) {
             .getOrElse { error("AI returned malformed output. Try again or edit manually.\n\n---\n$cleaned") }
     }
 
-    fun toDomain(parsed: ParsedSplit, currency: Currency): Triple<List<BillItem>, List<Charge>, List<String>> {
+    /** Returns the resolved currency (from AI), domain items, charges, and people. */
+    fun toDomain(parsed: ParsedSplit, fallback: Currency): Quadruple {
+        val resolved = Currency.byCode(parsed.currencyCode.ifBlank { fallback.code })
         val people = parsed.people.distinct().filter { it.isNotBlank() }
         val items = parsed.items.map { p ->
             BillItem(
                 name = p.name.trim(),
-                priceCents = priceToCents(p.price, currency),
+                priceCents = priceToCents(p.price, resolved),
                 assignedTo = p.assignedTo.trim().ifEmpty { BillItem.SHARED },
             )
         }
@@ -71,17 +73,25 @@ class SplitParser(private val client: GeminiClient) {
                 label = c.label.ifBlank { "Charge" },
                 type = type,
                 rate = c.rate,
-                valueCents = priceToCents(c.value, currency),
+                valueCents = priceToCents(c.value, resolved),
             )
         }
-        return Triple(items, charges, people)
+        return Quadruple(resolved, items, charges, people)
     }
 
+    data class Quadruple(
+        val currency: Currency,
+        val items: List<BillItem>,
+        val charges: List<Charge>,
+        val people: List<String>,
+    )
+
+    /** AI returns prices as plain digits ("32000" for Rp 32,000 / "1250" for $12.50). */
     private fun priceToCents(value: String, currency: Currency): Long {
-        val noDecimals = currency.code == "IDR" || currency.code == "JPY"
-        val stripped = value.replace(",", "").replace(".", "").replace(" ", "")
-        val n = stripped.toLongOrNull() ?: 0L
-        return if (noDecimals) n * 100 else n
+        val cleaned = value.replace(",", "").replace(".", "").replace(" ", "").replace("-", "")
+        val negative = value.trim().startsWith("-")
+        val n = cleaned.toLongOrNull() ?: 0L
+        return if (negative) -n else n
     }
 
     private fun stripCodeFences(raw: String): String {
@@ -93,33 +103,36 @@ class SplitParser(private val client: GeminiClient) {
         return s
     }
 
-    private fun buildPrompt(ocr: String, description: String, currency: Currency): String {
+    private fun buildPrompt(ocr: String, description: String, fallback: Currency): String {
         return """
 You are a receipt-parsing assistant for SplitNow, a split-bill app.
 
-Given OCR text from a restaurant receipt and a free-text description of who ordered what, produce a strict JSON object that matches this schema:
+Given OCR text from a restaurant receipt and a free-text description of who ordered what, produce a strict JSON object matching this schema:
 
 {
   "restaurantName": "string",
   "people": ["string", ...],
   "items": [
-    { "name": "string", "price": "string (numbers only, ${if (currency.code == "IDR" || currency.code == "JPY") "no decimals" else "two decimals like 12.50 stored as cents 1250"})", "assignedTo": "Name1,Name2 OR SHARED" }
+    { "name": "string", "price": "string (integer minor units)", "assignedTo": "Name1,Name2 OR SHARED" }
   ],
   "charges": [
-    { "label": "Tax / Service / Discount / etc", "type": "PERCENT or FIXED", "rate": 10.0, "value": "string" }
+    { "label": "Tax / Service / Discount / etc", "type": "PERCENT or FIXED", "rate": 10.0, "value": "string (integer minor units)" }
   ],
-  "currencyCode": "${currency.code}"
+  "currencyCode": "ISO 4217 — IDR, JPY, KRW (zero-decimal) or USD, EUR, GBP, SGD, MYR (two-decimal)"
 }
 
 Hard rules:
 - Return JSON ONLY, no prose, no markdown fences.
-- Every item.assignedTo MUST be either SHARED or a comma-separated list of names that appear in people.
-- If the description doesn't mention a person, fall back to SHARED.
-- Include tax/service/discount in charges, NOT in items.
+- DETECT the currency from the receipt (currency symbol, country/language, items). Report it in currencyCode. If genuinely unclear, fall back to ${fallback.code}.
+- Price encoding rule (CRITICAL):
+  * Zero-decimal currencies (IDR, JPY, KRW): price is the major unit as integer. Rp 32.000 -> "32000". ¥1,500 -> "1500".
+  * Two-decimal currencies (USD, EUR, etc): price is in cents. $12.50 -> "1250". €4.00 -> "400".
+- Every item.assignedTo MUST be either SHARED or a comma-separated list of names that appear in `people`.
+- If the description doesn't mention who got an item, fall back to SHARED.
+- Tax/service/discount go in `charges`, NOT in `items`.
 - For discounts, charges.value is negative.
 - For PERCENT charges, rate is the percentage (e.g. 10.0). For FIXED, rate may be 0.
-- Use the same currency as the receipt (or default to ${currency.code}).
-- All prices stored as integer major units (e.g. Rp 32.000 -> "32000").
+- People names must come from the user description, not invented.
 
 OCR text:
 ---
