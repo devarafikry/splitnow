@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "pantri-82d2a"
+  },
+  "targets": {
+    "pantri-82d2a": {
+      "hosting": {
+        "splitnow": [
+          "splitnow-app"
+        ]
+      }
+    }
+  }
+}

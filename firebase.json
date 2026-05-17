@@ -1,0 +1,15 @@
+{
+  "hosting": {
+    "site": "splitnow-app",
+    "public": "landing",
+    "ignore": [
+      "firebase.json",
+      "**/.DS_Store",
+      "**/.gitignore",
+      "**/.git/**",
+      "**/node_modules/**"
+    ],
+    "cleanUrls": true,
+    "trailingSlash": false
+  }
+}

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>SplitNow · Privacy Policy</title>
+  <link rel="icon" type="image/svg+xml" href="/mark.svg" />
+  <style>
+    :root { color-scheme: light; }
+    html, body { margin: 0; padding: 0; background: #FFFFFF; color: #0F0E0C;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 680px; margin: 0 auto; padding: 40px 24px 80px; }
+    h1 { font-size: 30px; font-weight: 700; margin: 0 0 6px; }
+    .subtitle { color: #6E6A62; margin: 0 0 36px; font-size: 14px; }
+    h2 { font-size: 18px; font-weight: 600; margin: 36px 0 8px; border-top: 1px solid #EDE9DF; padding-top: 24px; }
+    h2:first-of-type { border-top: none; padding-top: 0; }
+    p, li { font-size: 15px; line-height: 1.65; color: #3A342D; margin: 0 0 8px; }
+    ul { padding-left: 20px; margin: 0 0 8px; }
+    li { margin-bottom: 6px; }
+    a { color: #F25A2B; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .callout { background: #FCE4D8; border-left: 3px solid #F25A2B; padding: 12px 16px; border-radius: 4px; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+    th { text-align: left; font-weight: 600; padding: 8px 10px; background: #F4F2EE; color: #0F0E0C; }
+    td { padding: 8px 10px; border-bottom: 1px solid #EDE9DF; vertical-align: top; }
+    footer { margin-top: 48px; color: #A8A49A; font-size: 13px; }
+    .brand { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+    .brand svg { width: 48px; height: 48px; }
+    .brand-name { font-size: 20px; font-weight: 700; color: #0F0E0C; }
+  </style>
+</head>
+<body>
+<main>
+  <div class="brand">
+    <svg viewBox="0 0 100 100"><circle cx="28" cy="32" r="9" fill="#F25A2B"/><line x1="22" y1="78" x2="78" y2="22" stroke="#F25A2B" stroke-width="22" stroke-linecap="round"/><circle cx="72" cy="68" r="9" fill="#F25A2B"/></svg>
+    <span class="brand-name">SplitNow</span>
+  </div>
+  <h1>Privacy Policy</h1>
+  <p class="subtitle">Last updated: 2026-05-17</p>
+
+  <p>
+    SplitNow is a no-account split-bill app built by Devara Corporation, a solo
+    Indonesian indie studio. This page explains exactly what data SplitNow handles,
+    where it goes, and how you control it. If you have questions, email
+    <a href="mailto:hello@devalab.app">hello@devalab.app</a>.
+  </p>
+
+  <div class="callout">
+    <strong>Short version:</strong> SplitNow has no user accounts, no servers
+    storing your splits, and no analytics. Every split lives only on your phone.
+    The only network call SplitNow ever makes is to Google's Gemini API to parse
+    receipts — and that call carries only the receipt text + your description,
+    never your payment details.
+  </div>
+
+  <h2>1. What we collect</h2>
+  <table>
+    <thead><tr><th>Category</th><th>What it is</th><th>Where it lives</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Splits</strong></td>
+        <td>Restaurant name, items, prices, who-ordered-what, charges, total.</td>
+        <td>Local SQLite database on your device only. Never uploaded.</td>
+      </tr>
+      <tr>
+        <td><strong>Payment methods</strong></td>
+        <td>Bank/e-wallet name, account number, holder name, optional QRIS image.</td>
+        <td>Local SQLite, your device only. Embedded onto the share image when you decide to share.</td>
+      </tr>
+      <tr>
+        <td><strong>Receipt images</strong></td>
+        <td>The photo you take of the receipt.</td>
+        <td>OCR runs on-device (Apple Vision Kit on iOS, Google ML Kit on Android). The image itself never leaves the phone.</td>
+      </tr>
+      <tr>
+        <td><strong>OCR text + description</strong></td>
+        <td>The recognized lines + your typed-naturally description of who ordered what.</td>
+        <td>Sent to Google Gemini API (generativelanguage.googleapis.com) for one-off parsing into structured items. Google's policy applies to that call.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>2. What we don't collect</h2>
+  <ul>
+    <li>No name, email, phone, or any account identifier — there are no accounts.</li>
+    <li>No device IDs, advertising IDs, IP logging, or analytics.</li>
+    <li>No location data.</li>
+    <li>No contacts. SplitNow never asks for contacts permission.</li>
+    <li>No crash reporting tied to your identity (we don't know who you are).</li>
+  </ul>
+
+  <h2>3. The one network call: Google Gemini</h2>
+  <p>
+    SplitNow uses Google's Gemini API to convert the OCR text + your free-text
+    description into a clean per-person breakdown. This is the only place the app
+    talks to a server. We send:
+  </p>
+  <ul>
+    <li>The OCR text the phone extracted from your receipt photo.</li>
+    <li>The description you typed (e.g. "Budi got nasi goreng, Tina had es teh").</li>
+    <li>A short prompt asking Gemini to produce structured JSON.</li>
+  </ul>
+  <p>
+    We never send payment account numbers, your phone identifier, or any name
+    other than the names you yourself typed in the description. Google's Gemini
+    handling is governed by their
+    <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">privacy policy</a>
+    — review it if this matters to you.
+  </p>
+
+  <h2>4. Sharing the receipt image</h2>
+  <p>
+    When you tap "Share split", SplitNow renders the per-person breakdown as a
+    PNG image including your selected payment method, and hands it to the OS share
+    sheet. Where it goes from there (WhatsApp, LINE, Mail, etc.) is up to you and
+    that app's policy. SplitNow doesn't keep a copy and doesn't track shares.
+  </p>
+
+  <h2>5. Your control</h2>
+  <ul>
+    <li><strong>Delete a split:</strong> Long-press in the history view and tap Delete.</li>
+    <li><strong>Delete a payment method:</strong> Settings → Payment methods → tap → Delete.</li>
+    <li><strong>Delete everything:</strong> Uninstall the app. All local data is removed by the OS.</li>
+  </ul>
+
+  <h2>6. Children</h2>
+  <p>
+    SplitNow is not directed at children under 13. We don't knowingly collect
+    anything from anyone — there are no accounts — but the app is intended for
+    general audiences old enough to manage payments.
+  </p>
+
+  <h2>7. Changes</h2>
+  <p>
+    If this policy changes materially, we'll update the "Last updated" date and,
+    when possible, surface a notice in the app on next launch.
+  </p>
+
+  <h2>8. Contact</h2>
+  <p>
+    Email <a href="mailto:hello@devalab.app">hello@devalab.app</a>. SplitNow is
+    built by Devara Corporation, Indonesia.
+  </p>
+
+  <footer>
+    SplitNow · made with care · <a href="/">splitnow.devalab.app</a>
+  </footer>
+</main>
+</body>
+</html>
