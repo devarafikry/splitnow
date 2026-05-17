@@ -20,6 +20,15 @@ data class Currency(val code: String, val symbol: String, val locale: String) {
 
 enum class ChargeType { PERCENT, FIXED }
 
+/**
+ * How tax/service/charges are split across the diners.
+ *  - EQUAL: charges divided equally across all people.
+ *  - SKIP: charges aren't added to anyone's share — the host absorbs them.
+ *
+ * PROPORTIONAL is kept in the enum for backward compatibility with existing
+ * Room rows; the picker no longer offers it and Review coerces stored
+ * PROPORTIONAL values to EQUAL on read.
+ */
 enum class SplitMode { PROPORTIONAL, EQUAL, SKIP }
 
 enum class PaymentKind { BANK, EWALLET, QRIS }
@@ -35,7 +44,7 @@ data class Split(
     val dateMs: Long,
     val currencyCode: String,
     val totalCents: Long,
-    val splitMode: SplitMode = SplitMode.PROPORTIONAL,
+    val splitMode: SplitMode = SplitMode.EQUAL,
     val paymentMethodId: Long? = null,
     val notes: String? = null,
 )

@@ -25,7 +25,7 @@ data class SplitEntity(
 ) {
     fun toDomain() = Split(
         id, restaurantName, dateMs, currencyCode, totalCents,
-        runCatching { SplitMode.valueOf(splitMode) }.getOrDefault(SplitMode.PROPORTIONAL),
+        runCatching { SplitMode.valueOf(splitMode) }.getOrDefault(SplitMode.EQUAL),
         paymentMethodId, notes,
     )
     companion object {

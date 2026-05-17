@@ -40,6 +40,7 @@ import com.devara.splitnow.domain.BillItem
 import com.devara.splitnow.domain.Currency
 import com.devara.splitnow.domain.parseMoneyToCents
 import com.devara.splitnow.ui.components.ChipPicker
+import com.devara.splitnow.ui.components.dismissKeyboardOnTap
 import com.devara.splitnow.ui.flow.SplitFlowState
 import com.devara.splitnow.ui.theme.SplitNowTokens
 import org.koin.compose.koinInject
@@ -82,7 +83,8 @@ fun EditItemModal(
             .fillMaxSize()
             .background(t.surface)
             .windowInsetsPadding(WindowInsets.statusBars)
-            .imePadding(),
+            .imePadding()
+            .dismissKeyboardOnTap(),
     ) {
         // Top
         Row(

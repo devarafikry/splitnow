@@ -19,7 +19,7 @@ class SplitFlowState {
     var people: MutableList<String> = mutableListOf()
     var items: MutableList<BillItem> = mutableListOf()
     var charges: MutableList<Charge> = mutableListOf()
-    var splitMode: SplitMode = SplitMode.PROPORTIONAL
+    var splitMode: SplitMode = SplitMode.EQUAL
     var subtotalCents: Long = 0L
     var totalCents: Long = 0L
     var error: String? = null
@@ -32,7 +32,7 @@ class SplitFlowState {
         people.clear()
         items.clear()
         charges.clear()
-        splitMode = SplitMode.PROPORTIONAL
+        splitMode = SplitMode.EQUAL
         subtotalCents = 0L
         totalCents = 0L
         error = null

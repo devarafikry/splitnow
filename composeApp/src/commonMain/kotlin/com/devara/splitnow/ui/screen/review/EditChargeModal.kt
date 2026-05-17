@@ -39,6 +39,7 @@ import com.devara.splitnow.domain.Charge
 import com.devara.splitnow.domain.ChargeType
 import com.devara.splitnow.domain.parseMoneyToCents
 import com.devara.splitnow.ui.components.Segmented
+import com.devara.splitnow.ui.components.dismissKeyboardOnTap
 import com.devara.splitnow.ui.flow.SplitFlowState
 import com.devara.splitnow.ui.theme.SplitNowTokens
 import org.koin.compose.koinInject
@@ -67,7 +68,8 @@ fun EditChargeModal(
             .fillMaxSize()
             .background(t.surface)
             .windowInsetsPadding(WindowInsets.statusBars)
-            .imePadding(),
+            .imePadding()
+            .dismissKeyboardOnTap(),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),

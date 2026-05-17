@@ -41,6 +41,7 @@ import com.devara.splitnow.domain.PaymentMethod
 import com.devara.splitnow.ui.components.FlowNav
 import com.devara.splitnow.ui.components.PrimaryButton
 import com.devara.splitnow.ui.components.Segmented
+import com.devara.splitnow.ui.components.dismissKeyboardOnTap
 import com.devara.splitnow.ui.theme.SplitNowTokens
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
@@ -68,7 +69,7 @@ fun EditPaymentScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(t.bg)) {
+    Column(modifier = Modifier.fillMaxSize().background(t.bg).dismissKeyboardOnTap()) {
         FlowNav(title = if (methodId == null) "Add method" else "Edit method", onBack = onBack)
         Column(
             modifier = Modifier

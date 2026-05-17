@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.devara.splitnow.ui.components.FlowNav
 import com.devara.splitnow.ui.components.PrimaryButton
 import com.devara.splitnow.ui.components.SplitNowMark
+import com.devara.splitnow.ui.components.dismissKeyboardOnTap
 import com.devara.splitnow.ui.flow.SplitFlowState
 import com.devara.splitnow.ui.theme.SplitNowTokens
 import org.koin.compose.koinInject
@@ -49,7 +50,8 @@ fun DescribeScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(t.bg)
-            .imePadding(),
+            .imePadding()
+            .dismissKeyboardOnTap(),
     ) {
         FlowNav(title = "Who got what?", onBack = onBack, backLabel = "Back")
 
