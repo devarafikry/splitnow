@@ -1,0 +1,26 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Keystores
+keystore.properties
+*.jks
+*.keystore
+
+# iOS
+iosApp/Pods/
+iosApp/Podfile.lock
+iosApp/build/
+xcuserdata/
+*.xcuserstate
+DerivedData/
+
+# Local dev keys
+local.properties
+*.local.xcconfig
