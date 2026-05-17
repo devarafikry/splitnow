@@ -1,7 +1,8 @@
 TEAM_ID=
-BUNDLE_ID=app.devalab.goingout
-APP_NAME=GoingOut
-// Secrets go in Config.local.xcconfig (gitignored). Create it alongside this
-// file and set PANTRI_GEMINI_KEY=<your key>. Same Gemini key as Pantri.
-PANTRI_GEMINI_KEY=
+BUNDLE_ID=com.devara.splitnow
+APP_NAME=SplitNow
+// Secrets go in Config.local.xcconfig (gitignored). Set:
+//   SPLITNOW_GEMINI_KEY=AIza...
+// Same Gemini key family as Pantri/Spotter.
+SPLITNOW_GEMINI_KEY=
 #include? "Config.local.xcconfig"
