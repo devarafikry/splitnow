@@ -263,14 +263,17 @@ fun ChipPicker(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (active) {
+                    // Active chip sits on a t.ink background — the indicator
+                    // dot + label must use t.bg (which inverts with the theme)
+                    // or they vanish in dark mode (ink IS near-white there).
                     Box(
-                        modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(Color.White),
+                        modifier = Modifier.size(6.dp).clip(RoundedCornerShape(3.dp)).background(t.bg),
                     )
                     Spacer(Modifier.width(6.dp))
                 }
                 Text(
                     label,
-                    color = if (active) Color.White else t.ink,
+                    color = if (active) t.bg else t.ink,
                     fontWeight = FontWeight.W600,
                     fontSize = 15.sp,
                 )
