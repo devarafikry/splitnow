@@ -58,12 +58,26 @@ class SplitParser(private val client: GeminiClient) {
     /** Returns the resolved currency (from AI), domain items, charges, and people. */
     fun toDomain(parsed: ParsedSplit, fallback: Currency): Quadruple {
         val resolved = Currency.byCode(parsed.currencyCode.ifBlank { fallback.code })
-        val people = parsed.people.distinct().filter { it.isNotBlank() }
+        val people = parsed.people.distinct().filter { it.isNotBlank() }.map { it.trim() }
+        // Lower-case lookup keyed → canonical name from people list. Used to
+        // normalize the AI's assignedTo string so case/whitespace variants
+        // ("budi", "BUDI ") still resolve to the same person.
+        val canonical: Map<String, String> = people.associateBy { it.lowercase() }
         val items = parsed.items.map { p ->
+            val raw = p.assignedTo.trim()
+            val assignedTo = when {
+                raw.isEmpty() -> BillItem.SHARED
+                raw.equals("SHARED", ignoreCase = true) -> BillItem.SHARED
+                else -> {
+                    val matched = raw.split(",")
+                        .mapNotNull { token -> canonical[token.trim().lowercase()] }
+                    if (matched.isEmpty()) BillItem.SHARED else matched.distinct().joinToString(",")
+                }
+            }
             BillItem(
                 name = p.name.trim(),
                 priceCents = priceToCents(p.price, resolved),
-                assignedTo = p.assignedTo.trim().ifEmpty { BillItem.SHARED },
+                assignedTo = assignedTo,
             )
         }
         val charges = parsed.charges.map { c ->

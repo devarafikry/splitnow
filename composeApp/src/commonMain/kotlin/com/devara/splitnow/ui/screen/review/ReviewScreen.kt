@@ -120,6 +120,15 @@ fun ReviewScreen(
             Text(hero)
             Spacer(Modifier.height(8.dp))
 
+            // Sanity-check pill: confirms every item has an owner and the sum
+            // of per-person shares matches the bill total (or the expected
+            // subset for SKIP mode).
+            val audit = remember(items.toList(), charges.toList(), people.toList(), mode, shares) {
+                com.devara.splitnow.domain.auditShares(items, charges, shares, mode, people)
+            }
+            AuditPill(audit, currency)
+            Spacer(Modifier.height(8.dp))
+
             // Per person section
             SectionHeader("Per person", action = "Add item", onAction = { onAddItem(null) })
             shares.forEach { share ->
@@ -156,16 +165,34 @@ fun ReviewScreen(
                     Spacer(Modifier.height(10.dp))
                     Box(Modifier.fillMaxWidth().height(1.dp).background(t.line))
                     Spacer(Modifier.height(6.dp))
-                    val personalItems = items.filter { !it.isShared && share.name in it.people }
+                    // Person's portion of each item they own. Items split with
+                    // others show price ÷ N alongside a "split N ways" hint so
+                    // it's obvious why their per-item amount is less than the
+                    // sticker price.
+                    val personalItems = items.filter { item ->
+                        !item.isShared && item.people.any { it.equals(share.name, ignoreCase = true) }
+                    }
                     personalItems.forEach { item ->
+                        val splitAmong = item.people.size.coerceAtLeast(1)
+                        val portion = item.priceCents / splitAmong
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable { onEditItem(item.id) }
                                 .padding(vertical = 8.dp),
                         ) {
-                            Text(item.name, color = t.ink, fontSize = 14.sp, modifier = Modifier.weight(1f))
-                            Text(formatMoney(item.priceCents, currency), color = t.ink, fontWeight = FontWeight.W600, fontSize = 14.sp)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(item.name, color = t.ink, fontSize = 14.sp)
+                                if (splitAmong > 1) {
+                                    Text(
+                                        "split $splitAmong ways · " +
+                                            "${currency.symbol} ${formatMoney(item.priceCents, currency)} total",
+                                        color = t.ink2,
+                                        fontSize = 11.sp,
+                                    )
+                                }
+                            }
+                            Text(formatMoney(portion, currency), color = t.ink, fontWeight = FontWeight.W600, fontSize = 14.sp)
                         }
                     }
                     Row(
@@ -179,13 +206,20 @@ fun ReviewScreen(
                 }
             }
 
-            // Shared section
-            val sharedItems = items.filter { it.isShared }
+            // Shared section — items everyone splits equally.
+            val sharedItems = items.filter { item ->
+                // Genuine SHARED items, OR items whose owners couldn't be
+                // resolved (unknown name from AI) — both end up split across
+                // everyone by the calculator.
+                item.isShared ||
+                    item.people.none { name -> people.any { p -> p.equals(name, ignoreCase = true) } }
+            }
             SectionHeader("Shared", action = "Add shared", onAction = onAddShared)
             sharedItems.forEachIndexed { i, item ->
+                val perPerson = item.priceCents / people.size.coerceAtLeast(1)
                 EditableRow(
                     label = item.name,
-                    sub = "split ${people.size} ways",
+                    sub = "split ${people.size} ways · ${currency.symbol} ${formatMoney(perPerson, currency)} each",
                     valueText = "${currency.symbol} ${formatMoney(item.priceCents, currency)}",
                     onClick = { onEditItem(item.id) },
                     last = i == sharedItems.lastIndex,
@@ -228,24 +262,19 @@ fun ReviewScreen(
                 }
             }
 
-            // Split mode
+            // Split mode — Equal vs Skip only. (Proportional was confusing.)
             SectionHeader("Split tax & service")
             Segmented(
-                options = listOf("Proportional", "Equal", "Skip"),
-                activeIndex = when (mode) {
-                    SplitMode.PROPORTIONAL -> 0
-                    SplitMode.EQUAL -> 1
-                    SplitMode.SKIP -> 2
-                },
+                options = listOf("Equal", "Skip"),
+                activeIndex = if (mode == SplitMode.SKIP) 1 else 0,
                 onSelect = { i ->
-                    mode = when (i) { 0 -> SplitMode.PROPORTIONAL; 1 -> SplitMode.EQUAL; else -> SplitMode.SKIP }
+                    mode = if (i == 0) SplitMode.EQUAL else SplitMode.SKIP
                 },
             )
             Text(
                 when (mode) {
-                    SplitMode.PROPORTIONAL -> "Each person pays charges proportional to their own items."
-                    SplitMode.EQUAL -> "Charges are split equally across everyone."
-                    SplitMode.SKIP -> "Charges aren't added to anyone's share."
+                    SplitMode.SKIP -> "Skipped — you cover tax/service yourself, friends pay only for their items."
+                    else -> "Tax/service split equally across everyone."
                 },
                 color = t.ink2,
                 fontSize = 13.sp,
@@ -264,5 +293,39 @@ fun ReviewScreen(
                 leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, tint = t.bg) },
             )
         }
+    }
+}
+
+@Composable
+private fun AuditPill(
+    audit: com.devara.splitnow.domain.SplitAudit,
+    currency: Currency,
+) {
+    val t = SplitNowTokens.colors
+    val ok = audit.matchesBill && audit.unassignedItems.isEmpty()
+    val bg = if (ok) t.accentSoft else t.surface2
+    val fg = if (ok) t.accent else t.destructive
+    val message = when {
+        audit.unassignedItems.isNotEmpty() ->
+            "⚠ ${audit.unassignedItems.size} item${if (audit.unassignedItems.size == 1) "" else "s"} without an owner — counted as shared."
+        audit.mode == SplitMode.SKIP -> {
+            val friendsPart = audit.sumOfSharesCents
+            val hostPart = audit.chargesTotalCents
+            "✓ Friends pay ${currency.symbol} ${com.devara.splitnow.domain.formatMoney(friendsPart, currency)} · " +
+                "you cover ${currency.symbol} ${com.devara.splitnow.domain.formatMoney(hostPart, currency)}"
+        }
+        audit.matchesBill ->
+            "✓ Splits add up to ${currency.symbol} ${com.devara.splitnow.domain.formatMoney(audit.billTotalCents, currency)}"
+        else ->
+            "⚠ Splits sum to ${currency.symbol} ${com.devara.splitnow.domain.formatMoney(audit.sumOfSharesCents, currency)} — expected ${currency.symbol} ${com.devara.splitnow.domain.formatMoney(audit.billTotalCents, currency)}"
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(99.dp))
+            .background(bg)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+    ) {
+        Text(message, color = fg, fontSize = 13.sp, fontWeight = FontWeight.W600)
     }
 }
