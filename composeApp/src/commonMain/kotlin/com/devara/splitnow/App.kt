@@ -15,6 +15,8 @@ import androidx.navigation.compose.rememberNavController
 import com.devara.splitnow.ai.SplitParser
 import com.devara.splitnow.data.PREF_ONBOARDED
 import com.devara.splitnow.data.SettingsStore
+import com.devara.splitnow.data.SplitRepository
+import com.devara.splitnow.domain.Split
 import com.devara.splitnow.platform.UrlOpener
 import com.devara.splitnow.scan.TextRecognizer
 import com.devara.splitnow.ui.flow.SplitFlowState
@@ -70,7 +72,25 @@ fun App() {
         val recognizer = koinInject<TextRecognizer>()
         val parser = koinInject<SplitParser>()
         val urlOpener = koinInject<UrlOpener>()
+        val repo = koinInject<SplitRepository>()
         val scope = rememberCoroutineScope()
+
+        // Persist the in-progress split to history. Re-uses the existing row
+        // if it has been saved once already (persistedSplitId), so Done →
+        // re-open from history → Share doesn't create duplicates.
+        suspend fun persistSplit() {
+            if (flow.items.isEmpty()) return
+            val total = flow.items.sumOf { it.priceCents } + flow.charges.sumOf { it.valueCents }
+            val split = Split(
+                id = flow.persistedSplitId ?: 0L,
+                restaurantName = flow.restaurantName.ifBlank { "Receipt" },
+                dateMs = kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+                currencyCode = flow.currency.code,
+                totalCents = total,
+                splitMode = flow.splitMode,
+            )
+            flow.persistedSplitId = repo.saveSplit(split, flow.items.toList(), flow.charges.toList())
+        }
         val onboarded = remember { settings.getBoolean(PREF_ONBOARDED, false) }
         val startDest = if (onboarded) Routes.HOME else Routes.ONBOARDING
 
@@ -145,10 +165,18 @@ fun App() {
                     ReviewScreen(
                         onBack = { nav.popBackStack() },
                         onDone = {
-                            flow.reset()
-                            nav.popBackStack(Routes.HOME, inclusive = false)
+                            scope.launch {
+                                persistSplit()
+                                flow.reset()
+                                nav.popBackStack(Routes.HOME, inclusive = false)
+                            }
                         },
-                        onShare = { nav.navigate(Routes.PICK_PAYMENT) },
+                        onShare = {
+                            scope.launch {
+                                persistSplit()
+                                nav.navigate(Routes.PICK_PAYMENT)
+                            }
+                        },
                         onEditItem = { id -> editItemArgs = id to null; nav.navigate(Routes.EDIT_ITEM) },
                         onAddItem = { who -> editItemArgs = null to who; nav.navigate(Routes.EDIT_ITEM) },
                         onAddShared = { editItemArgs = null to "Shared"; nav.navigate(Routes.EDIT_ITEM) },

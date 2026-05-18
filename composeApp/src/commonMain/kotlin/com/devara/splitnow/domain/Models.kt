@@ -76,7 +76,17 @@ data class Charge(
     /** For FIXED this is the absolute amount in cents; for PERCENT this is the computed value. */
     val valueCents: Long = 0L,
     /** Discounts have negative valueCents. */
-)
+    /**
+     * Comma-separated canonical names excluded from THIS charge. Empty = everyone pays.
+     * When the Review screen lets a person opt out of a charge, that person's name is
+     * appended here and the charge is redistributed across remaining people.
+     */
+    val excludeFromNames: String = "",
+) {
+    val excluded: List<String> get() =
+        if (excludeFromNames.isBlank()) emptyList()
+        else excludeFromNames.split(",").mapNotNull { it.trim().takeIf(String::isNotBlank) }
+}
 
 @Serializable
 data class PaymentMethod(

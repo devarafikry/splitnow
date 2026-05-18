@@ -10,9 +10,13 @@ package com.devara.splitnow.domain
  *  - In EQUAL mode: Σ(personShare.totalCents) == itemsSubtotal + chargesTotal.
  *  - In SKIP mode:  Σ(personShare.totalCents) == itemsSubtotal (host absorbs
  *    the charges; friends only owe for their own items + shared).
- *
- * Person-name matching is case-insensitive against the `people` list, with
- * canonicalization happening upstream in SplitParser.toDomain().
+ *  - Per-charge `excludeFromNames` removes specific people from that charge's
+ *    distribution — the remaining people split the same amount across fewer
+ *    heads, so the bill total still ties out.
+ *  - A "shared" item whose `assignedTo` lists names rather than "SHARED" is
+ *    treated as multi-assignee — same math as a shared item but restricted
+ *    to that subset. This is how the Review screen lets a person opt out
+ *    of a shared item.
  */
 fun calculateShares(
     items: List<BillItem>,
@@ -23,68 +27,58 @@ fun calculateShares(
     if (people.isEmpty()) return emptyList()
     val canonical: Map<String, String> = people.associateBy { it.lowercase() }
 
-    // Per-item assignee resolution. Items with unrecognized assignees become SHARED.
-    fun resolved(item: BillItem): List<String> {
-        if (item.isShared) return emptyList()
-        val raw = item.people
-        val matched = raw.mapNotNull { canonical[it.lowercase()] }
-        return matched.distinct()
-    }
+    fun resolve(names: List<String>): List<String> =
+        names.mapNotNull { canonical[it.lowercase()] }.distinct()
 
     val personalCents = HashMap<String, Long>().apply { people.forEach { put(it, 0L) } }
-    val sharedItems = mutableListOf<BillItem>()
+    val sharedCents = HashMap<String, Long>().apply { people.forEach { put(it, 0L) } }
+
     for (item in items) {
-        val owners = resolved(item)
-        if (item.isShared || owners.isEmpty()) {
-            sharedItems.add(item)
-            continue
-        }
-        val per = item.priceCents / owners.size
-        val remainder = item.priceCents - per * owners.size
-        owners.forEachIndexed { i, name ->
-            personalCents[name] = personalCents[name]!! + per + if (i == 0) remainder else 0L
+        val resolvedOwners = if (item.isShared) people else resolve(item.people)
+        // Items with no recognized owners fall back to everyone-shares.
+        val effectiveOwners = if (resolvedOwners.isEmpty()) people else resolvedOwners
+        val per = item.priceCents / effectiveOwners.size
+        val remainder = item.priceCents - per * effectiveOwners.size
+        // Bucket: a real personal item (assignedTo lists known names) credits
+        // the personal bucket; SHARED-flagged + unresolved-owner items credit
+        // the shared bucket. The distinction surfaces in the UI breakdown.
+        val targetBucket = if (item.isShared || resolve(item.people).isEmpty()) sharedCents else personalCents
+        effectiveOwners.forEachIndexed { i, name ->
+            targetBucket[name] = targetBucket[name]!! + per + if (i == 0) remainder else 0L
         }
     }
 
-    // Shared items: split equally across all people, deterministic remainder.
-    val sharedTotal = sharedItems.sumOf { it.priceCents }
-    val sharedPer = sharedTotal / people.size
-    val sharedRemainder = sharedTotal - sharedPer * people.size
-    val sharedCents = HashMap<String, Long>().apply {
-        people.forEachIndexed { i, name -> put(name, sharedPer + if (i == 0) sharedRemainder else 0L) }
-    }
-
-    // Charges: EQUAL splits across everyone with remainder; SKIP leaves zeros.
-    val chargesTotal = charges.sumOf { it.valueCents }
+    // Charges — per-charge distribution, honoring exclusions.
     val chargesCents = HashMap<String, Long>().apply { people.forEach { put(it, 0L) } }
-    when (mode) {
-        SplitMode.SKIP -> { /* host absorbs */ }
-        // PROPORTIONAL exists only for backward-compat; treat as EQUAL.
-        SplitMode.EQUAL, SplitMode.PROPORTIONAL -> {
-            val per = chargesTotal / people.size
-            val rem = chargesTotal - per * people.size
-            people.forEachIndexed { i, name ->
-                chargesCents[name] = per + if (i == 0) rem else 0L
+    if (mode != SplitMode.SKIP) {
+        for (charge in charges) {
+            val excluded = resolve(charge.excluded).toSet()
+            val payers = people.filterNot { it in excluded }
+            if (payers.isEmpty()) continue
+            val per = charge.valueCents / payers.size
+            val rem = charge.valueCents - per * payers.size
+            payers.forEachIndexed { i, name ->
+                chargesCents[name] = chargesCents[name]!! + per + if (i == 0) rem else 0L
             }
         }
     }
 
-    // Each person's items list = personal items they participate in + every shared item.
     return people.map { name ->
-        val personItems = items.filter { item ->
-            val owners = resolved(item)
-            (item.isShared || owners.isEmpty()) || name in owners
+        val itemsForPerson = items.filter { item ->
+            val owners = if (item.isShared) people else resolve(item.people)
+            val effective = if (owners.isEmpty()) people else owners
+            name in effective
         }
-        val itemsC = personalCents[name]!!
-        val sharedC = sharedCents[name]!!
-        val chargesC = chargesCents[name]!!
+        val pCents = personalCents[name]!!
+        val sCents = sharedCents[name]!!
+        val cCents = chargesCents[name]!!
         PersonShare(
             name = name,
-            itemsCents = itemsC,
-            sharedCents = sharedC,
-            chargesCents = chargesC,
-            totalCents = itemsC + sharedC + chargesC,
-            items = personItems,
+            itemsCents = pCents,
+            sharedCents = sCents,
+            chargesCents = cCents,
+            totalCents = pCents + sCents + cCents,
+            items = itemsForPerson,
         )
     }
 }
