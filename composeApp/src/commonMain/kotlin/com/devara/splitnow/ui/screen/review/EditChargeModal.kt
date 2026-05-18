@@ -192,5 +192,5 @@ fun EditChargeModal(
 @Composable
 private fun FieldLabel(label: String) {
     val t = SplitNowTokens.colors
-    Text(label.uppercase(), color = t.ink3, fontSize = 12.sp, fontWeight = FontWeight.W700, letterSpacing = 1.2.sp, modifier = Modifier.padding(bottom = 10.dp))
+    Text(label.uppercase(), color = t.ink2, fontSize = 12.sp, fontWeight = FontWeight.W700, letterSpacing = 1.2.sp, modifier = Modifier.padding(bottom = 10.dp))
 }

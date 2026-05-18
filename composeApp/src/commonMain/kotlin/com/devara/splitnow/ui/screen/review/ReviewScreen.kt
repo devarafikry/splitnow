@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Share
@@ -246,6 +247,14 @@ fun ReviewScreen(
                     item.people.none { name -> people.any { p -> p.equals(name, ignoreCase = true) } }
             }
             SectionHeader("Shared", action = "Add shared", onAction = onAddShared)
+            if (sharedItems.isEmpty()) {
+                Text(
+                    "No shared items yet.",
+                    color = t.ink2,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 14.dp),
+                )
+            }
             sharedItems.forEachIndexed { i, item ->
                 val perPerson = item.priceCents / people.size.coerceAtLeast(1)
                 EditableRow(
@@ -256,21 +265,29 @@ fun ReviewScreen(
                     last = i == sharedItems.lastIndex,
                 )
             }
-            if (sharedItems.isEmpty()) {
-                Row(
-                    modifier = Modifier.clickable { onAddShared() }.padding(vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = t.accent, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Add shared item", color = t.accent, fontWeight = FontWeight.W600, fontSize = 15.sp)
-                }
-            }
 
-            // Tax & charges
+            // Tax & charges — when mode is SKIP, render values muted + add a hint
+            // that the host (you) is personally absorbing every charge.
             SectionHeader("Tax & charges", action = "Add charge", onAction = onAddCharge)
+            if (mode == SplitMode.SKIP && charges.isNotEmpty()) {
+                Text(
+                    "Tax & service are borne by you — friends only pay their items.",
+                    color = t.ink2,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 8.dp),
+                )
+            }
+            if (charges.isEmpty()) {
+                Text(
+                    "No tax or service charges on this bill.",
+                    color = t.ink2,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(start = 4.dp, top = 2.dp, bottom = 14.dp),
+                )
+            }
             charges.forEachIndexed { i, charge ->
-                EditableRow(
+                MutedEditableRow(
+                    muted = mode == SplitMode.SKIP,
                     label = charge.label,
                     sub = when (charge.type) {
                         com.devara.splitnow.domain.ChargeType.PERCENT -> "${charge.rate}% of subtotal"
@@ -281,16 +298,6 @@ fun ReviewScreen(
                     onClick = { onEditCharge(charge.id) },
                     last = i == charges.lastIndex,
                 )
-            }
-            if (charges.isEmpty()) {
-                Row(
-                    modifier = Modifier.clickable { onAddCharge() }.padding(vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null, tint = t.accent, modifier = Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Add charge", color = t.accent, fontWeight = FontWeight.W600, fontSize = 15.sp)
-                }
             }
 
             // Split mode — Equal vs Skip only. (Proportional was confusing.)
@@ -324,6 +331,45 @@ fun ReviewScreen(
                 leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, tint = t.bg) },
             )
         }
+    }
+}
+
+/**
+ * Like EditableRow but lets us mute the row in SKIP mode (charge text drops
+ * to ink3 so the user reads "this isn't being distributed").
+ */
+@Composable
+private fun MutedEditableRow(
+    muted: Boolean,
+    label: String,
+    sub: String?,
+    valueText: String,
+    onClick: () -> Unit,
+    last: Boolean,
+) {
+    val t = SplitNowTokens.colors
+    val color = if (muted) t.ink3 else t.ink
+    val subColor = if (muted) t.ink3.copy(alpha = 0.7f) else t.ink2
+    Row(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }.padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, color = color, fontSize = 15.sp, fontWeight = FontWeight.W500)
+            if (sub != null) {
+                Text(sub, color = subColor, fontSize = 12.sp, modifier = Modifier.padding(top = 2.dp))
+            }
+        }
+        Text(valueText, color = color, fontSize = 15.sp, fontWeight = FontWeight.W600)
+        Spacer(Modifier.width(6.dp))
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = t.ink3,
+        )
+    }
+    if (!last) {
+        Box(modifier = Modifier.fillMaxWidth().height(1.dp).background(t.line))
     }
 }
 
