@@ -71,7 +71,7 @@ fun DescribeScreen(
         ) {
             if (value.text.isEmpty()) {
                 Text(
-                    "e.g. Budi got the nasi goreng pedas and an es teh. Tina ordered nasi goreng seafood. Joko only had air putih. We shared the kerupuk.",
+                    "e.g. Alex got the pizza and a soda. Maria had the pasta. Sam only had water. We shared the bread.",
                     color = t.ink3,
                     fontSize = 22.sp,
                     fontWeight = FontWeight.W400,
