@@ -135,13 +135,20 @@ Given OCR text from a restaurant receipt and a free-text description of who orde
   "currencyCode": "ISO 4217 — IDR, JPY, KRW (zero-decimal) or USD, EUR, GBP, SGD, MYR (two-decimal)"
 }
 
+Language handling (IMPORTANT — be flexible):
+- The OCR text and the user description may be in DIFFERENT languages. Understand both.
+- Item names ("name") MUST be reproduced in the language they appear on the receipt — do NOT translate them. e.g. if the receipt says "ナシゴレン", item.name is "ナシゴレン", not "fried rice".
+- People names ("people" + every name token in "assignedTo") MUST be reproduced as the user typed them in the description, in whatever script/case they used. e.g. if the user wrote "アレックス got the curry", people = ["アレックス"].
+- Match items to people based on the SEMANTIC intent of the description, regardless of source language. The user might write English while the receipt is Japanese, or vice versa — work it out.
+- charges.label may use a generic English label (Tax, Service, Discount) OR the receipt's term — your choice based on what reads cleaner.
+
 Hard rules:
 - Return JSON ONLY, no prose, no markdown fences.
 - DETECT the currency from the receipt (currency symbol, country/language, items). Report it in currencyCode. If genuinely unclear, fall back to ${fallback.code}.
 - Price encoding rule (CRITICAL):
   * Zero-decimal currencies (IDR, JPY, KRW): price is the major unit as integer. Rp 32.000 -> "32000". ¥1,500 -> "1500".
-  * Two-decimal currencies (USD, EUR, etc): price is in cents. $12.50 -> "1250". €4.00 -> "400".
-- Every item.assignedTo MUST be either SHARED or a comma-separated list of names that appear in `people`.
+  * Two-decimal currencies (USD, EUR, etc): price is in cents. ${'$'}12.50 -> "1250". €4.00 -> "400".
+- Every item.assignedTo MUST be either SHARED or a comma-separated list of names that EXACTLY match a name in `people` (same script, same case, same spelling).
 - If the description doesn't mention who got an item, fall back to SHARED.
 - Tax/service/discount go in `charges`, NOT in `items`.
 - For discounts, charges.value is negative.
