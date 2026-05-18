@@ -29,6 +29,8 @@ private val commonModule = module {
         roomDatabaseBuilder()
             .setDriver(BundledSQLiteDriver())
             .setQueryCoroutineContext(Dispatchers.Default)
+            // Dev-mode migration policy — schema can still churn before launch.
+            .fallbackToDestructiveMigration(dropAllTables = true)
             .build()
     }
     single { SplitRepository(get()) }

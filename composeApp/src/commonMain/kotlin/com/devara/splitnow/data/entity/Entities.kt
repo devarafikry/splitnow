@@ -77,15 +77,16 @@ data class ChargeEntity(
     val type: String,
     val rate: Double,
     val valueCents: Long,
+    val excludeFromNames: String = "",
 ) {
     fun toDomain() = Charge(
         id, splitId, label,
         runCatching { ChargeType.valueOf(type) }.getOrDefault(ChargeType.FIXED),
-        rate, valueCents,
+        rate, valueCents, excludeFromNames,
     )
     companion object {
         fun fromDomain(c: Charge) =
-            ChargeEntity(c.id, c.splitId, c.label, c.type.name, c.rate, c.valueCents)
+            ChargeEntity(c.id, c.splitId, c.label, c.type.name, c.rate, c.valueCents, c.excludeFromNames)
     }
 }
 

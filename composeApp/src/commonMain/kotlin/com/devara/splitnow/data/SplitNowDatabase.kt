@@ -20,7 +20,8 @@ import com.devara.splitnow.data.entity.SplitEntity
         ChargeEntity::class,
         PaymentMethodEntity::class,
     ],
-    version = 1,
+    // v2 added Charge.excludeFromNames so users can opt out of specific charges.
+    version = 2,
     exportSchema = true,
 )
 @ConstructedBy(SplitNowDbConstructor::class)

@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -148,7 +149,7 @@ fun ReviewScreen(
                                 .background(t.ink),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Text(share.name.firstOrNull()?.uppercase() ?: "?", color = Color.White, fontWeight = FontWeight.W700, fontSize = 15.sp)
+                            Text(share.name.firstOrNull()?.uppercase() ?: "?", color = t.bg, fontWeight = FontWeight.W700, fontSize = 15.sp)
                         }
                         Spacer(Modifier.width(12.dp))
                         Text(share.name, color = t.ink, fontSize = 18.sp, fontWeight = FontWeight.W600, modifier = Modifier.weight(1f))
@@ -165,10 +166,7 @@ fun ReviewScreen(
                     Spacer(Modifier.height(10.dp))
                     Box(Modifier.fillMaxWidth().height(1.dp).background(t.line))
                     Spacer(Modifier.height(6.dp))
-                    // Person's portion of each item they own. Items split with
-                    // others show price ÷ N alongside a "split N ways" hint so
-                    // it's obvious why their per-item amount is less than the
-                    // sticker price.
+                    // 1) Personal items they ordered (split by N if multi-assigned).
                     val personalItems = items.filter { item ->
                         !item.isShared && item.people.any { it.equals(share.name, ignoreCase = true) }
                     }
@@ -180,19 +178,52 @@ fun ReviewScreen(
                                 .fillMaxWidth()
                                 .clickable { onEditItem(item.id) }
                                 .padding(vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(item.name, color = t.ink, fontSize = 14.sp)
                                 if (splitAmong > 1) {
                                     Text(
-                                        "split $splitAmong ways · " +
-                                            "${currency.symbol} ${formatMoney(item.priceCents, currency)} total",
+                                        "split $splitAmong ways · ${currency.symbol} ${formatMoney(item.priceCents, currency)} total",
                                         color = t.ink2,
                                         fontSize = 11.sp,
                                     )
                                 }
                             }
                             Text(formatMoney(portion, currency), color = t.ink, fontWeight = FontWeight.W600, fontSize = 14.sp)
+                        }
+                    }
+                    // 2) Shared items they're paying a slice of. Each line shows the
+                    //    person's portion + a small ✕ to opt them out — the cost
+                    //    redistributes across the remaining people automatically.
+                    val sharedForPerson = items.filter { item ->
+                        item.isShared || item.people.mapNotNull { n -> people.firstOrNull { it.equals(n, ignoreCase = true) } }.isEmpty()
+                    }
+                    sharedForPerson.forEach { item ->
+                        val portion = item.priceCents / people.size.coerceAtLeast(1)
+                        BreakdownRow(
+                            label = item.name,
+                            sub = "shared · split ${people.size} ways",
+                            amount = portion,
+                            currency = currency,
+                            onRemove = { flow.excludeFromSharedItem(item.id, share.name) },
+                        )
+                    }
+                    // 3) Per-charge portion (tax, service, etc.) — only when mode is EQUAL.
+                    if (mode != SplitMode.SKIP) {
+                        charges.forEach { charge ->
+                            val excluded = charge.excluded.any { it.equals(share.name, ignoreCase = true) }
+                            if (excluded) return@forEach
+                            val payers = people.filterNot { p -> charge.excluded.any { it.equals(p, ignoreCase = true) } }
+                            if (payers.isEmpty()) return@forEach
+                            val portion = charge.valueCents / payers.size
+                            BreakdownRow(
+                                label = charge.label,
+                                sub = "shared · split ${payers.size} ways",
+                                amount = portion,
+                                currency = currency,
+                                onRemove = { flow.excludeFromCharge(charge.id, share.name) },
+                            )
                         }
                     }
                     Row(
@@ -291,6 +322,50 @@ fun ReviewScreen(
                 background = t.ink,
                 height = 64,
                 leadingIcon = { Icon(Icons.Default.Share, contentDescription = null, tint = t.bg) },
+            )
+        }
+    }
+}
+
+/**
+ * One row in a person's card showing a shared/charge slice + a small ✕ button
+ * to opt that person out. Removing redistributes the cost across remaining
+ * people — handled by SplitFlowState.excludeFrom*().
+ */
+@Composable
+private fun BreakdownRow(
+    label: String,
+    sub: String?,
+    amount: Long,
+    currency: Currency,
+    onRemove: () -> Unit,
+) {
+    val t = SplitNowTokens.colors
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(label, color = t.ink, fontSize = 14.sp)
+            if (sub != null) {
+                Text(sub, color = t.ink2, fontSize = 11.sp)
+            }
+        }
+        Text(formatMoney(amount, currency), color = t.ink, fontWeight = FontWeight.W600, fontSize = 14.sp)
+        Spacer(Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .clip(RoundedCornerShape(11.dp))
+                .background(t.surface)
+                .clickable { onRemove() },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Remove from this person",
+                tint = t.ink2,
+                modifier = Modifier.size(14.dp),
             )
         }
     }
