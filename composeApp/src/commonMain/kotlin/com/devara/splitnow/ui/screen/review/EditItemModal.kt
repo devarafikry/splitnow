@@ -188,7 +188,7 @@ private fun FormField(
     content: @Composable () -> Unit,
 ) {
     Column {
-        Text(label.uppercase(), color = t.ink3, fontSize = 12.sp, fontWeight = FontWeight.W700, letterSpacing = 1.2.sp)
+        Text(label.uppercase(), color = t.ink2, fontSize = 12.sp, fontWeight = FontWeight.W700, letterSpacing = 1.2.sp)
         Spacer(Modifier.height(10.dp))
         content()
         if (hint != null) {

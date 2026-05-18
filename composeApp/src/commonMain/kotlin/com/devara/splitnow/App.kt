@@ -148,6 +148,9 @@ fun App() {
                                     flow.people.clear()
                                     flow.people.addAll(quad.people.ifEmpty { listOf("You", "Friend") })
                                     flow.restaurantName = parsed.restaurantName.ifBlank { "Receipt" }
+                                    // Persist immediately so the split shows up in History
+                                    // even if the user backs out before tapping Done.
+                                    persistSplit()
                                     nav.navigate(Routes.REVIEW) { popUpTo(Routes.SCAN) { inclusive = true } }
                                 }.onFailure { e ->
                                     flow.error = e.message

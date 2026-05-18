@@ -1,5 +1,6 @@
 package com.devara.splitnow.ui.flow
 
+import androidx.compose.runtime.mutableStateListOf
 import com.devara.splitnow.domain.BillItem
 import com.devara.splitnow.domain.Charge
 import com.devara.splitnow.domain.Currency
@@ -9,6 +10,12 @@ import com.devara.splitnow.domain.SplitMode
  * In-memory state passed across the new-split flow (scan→OCR→describe→AI→review).
  * Held as a Koin singleton; reset() called when the user starts a fresh split or
  * finishes/cancels the current one.
+ *
+ * NOTE: `items`, `charges`, `people` are SnapshotStateList (mutableStateListOf), not
+ * plain MutableList. This is critical — Compose only recomposes when it observes a
+ * read of a snapshot-aware state object. A plain MutableList mutation goes through
+ * silently and the UI doesn't update, which manifests as "Add Shared does nothing",
+ * "edits don't show", etc.
  */
 class SplitFlowState {
     var capturedImage: ByteArray? = null
@@ -16,9 +23,9 @@ class SplitFlowState {
     var description: String = ""
     var restaurantName: String = ""
     var currency: Currency = Currency.IDR
-    var people: MutableList<String> = mutableListOf()
-    var items: MutableList<BillItem> = mutableListOf()
-    var charges: MutableList<Charge> = mutableListOf()
+    val people = mutableStateListOf<String>()
+    val items = mutableStateListOf<BillItem>()
+    val charges = mutableStateListOf<Charge>()
     var splitMode: SplitMode = SplitMode.EQUAL
     var subtotalCents: Long = 0L
     var totalCents: Long = 0L
