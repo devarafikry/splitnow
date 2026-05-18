@@ -135,6 +135,22 @@ Given OCR text from a restaurant receipt and a free-text description of who orde
   "currencyCode": "ISO 4217 — IDR, JPY, KRW (zero-decimal) or USD, EUR, GBP, SGD, MYR (two-decimal)"
 }
 
+Receipt-structure rules (IMPORTANT — modifiers vs. standalone items):
+- Receipts often list customizations/modifiers on a separate line BELOW the main item. These are NOT standalone items — they belong to the item above and their price is part of that item.
+- Hints that a line is a modifier (not its own item):
+  * Lacks the quantity prefix the main items have ("1 T", "1x", "1 ×", "1 個", etc).
+  * Smaller indentation / appears nested under another line.
+  * Generic add-on words in any language: ショット (shot), シロップ (syrup), カスタム (custom), 追加 (add), サイズ (size), アップ (up), オプション (option), トッピング (topping), 大盛り (large), Extra, Add-on, Side, Topping, Upgrade, +cheese, +syrup, dengan tambahan, ekstra, porsi tambah.
+  * Much smaller price than typical main items in the same receipt.
+  * Immediately follows a main item line — modifier lines are typically adjacent to their parent.
+- When you detect a modifier, MERGE its price into the parent item's `price`. Do NOT emit a separate item for it.
+  Example receipt:
+    1 T コーヒー フラペチーノ        440
+    ショット                       50
+  → items: [{ "name": "コーヒー フラペチーノ", "price": "490", "assignedTo": "<whoever ordered the coffee>" }]
+- A modifier with no price (e.g. "シロップ変更" marked カスタム / 0) just gets ignored — no item, no price change.
+- When you can't decide between modifier and standalone item, prefer standalone — the user can fix it manually in Review.
+
 Language handling (IMPORTANT — be flexible):
 - The OCR text and the user description may be in DIFFERENT languages. Understand both.
 - Item names ("name") MUST be reproduced in the language they appear on the receipt — do NOT translate them. e.g. if the receipt says "ナシゴレン", item.name is "ナシゴレン", not "fried rice".
