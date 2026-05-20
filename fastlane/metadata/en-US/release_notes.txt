@@ -1,0 +1,6 @@
+First release.
+
+• Receipt OCR + plain-English describe via Google Gemini
+• Per-person review with shared items + charges
+• Receipt-card image share with bank / e-wallet / QRIS details
+• Multi-currency, multi-payment-method settings

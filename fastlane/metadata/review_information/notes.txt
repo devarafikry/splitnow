@@ -1,0 +1,21 @@
+SplitNow is a single-purpose split-bill app. No accounts, no groups,
+no IOUs.
+
+Golden path the reviewer can exercise:
+
+1. Tap "+ New split" on Home.
+2. EITHER tap "Scan receipt" + grant camera (or use photo library),
+   OR tap "Skip" — both paths reach Describe.
+3. On Describe, type something like: "Anna had pasta, Bob had pizza,
+   we shared garlic bread." Tap Continue.
+4. The app sends the OCR text (if any) + the typed sentence to
+   Google Gemini. Gemini returns a structured split (per-person
+   items + shared + charges).
+5. On Review, tap "Share split" to render a receipt-card image and
+   open the iOS share sheet.
+
+Denying camera and photo permissions does not break the app — the
+typed-only flow is fully supported.
+
+The app uses standard HTTPS only (Gemini API). No tracking, no
+accounts, no login.
