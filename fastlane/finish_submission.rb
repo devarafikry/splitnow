@@ -28,7 +28,10 @@ puts "  appInfo: #{app_info.id} (age rating decl)"
 
 # ── 1. Attach build to version ────────────────────────────────────────────
 puts "\n→ Attaching build to version..."
-version.update(attributes: {}, build_id: build.id)
+Spaceship::ConnectAPI.patch_app_store_version_with_build(
+  app_store_version_id: version.id,
+  build_id: build.id,
+)
 puts "✓ Build attached"
 
 # ── 2. Clear export compliance on the build ───────────────────────────────
