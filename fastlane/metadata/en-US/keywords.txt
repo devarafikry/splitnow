@@ -1,0 +1,1 @@
+split,bill,receipt,share,tip,tax,group,restaurant,qris,friends

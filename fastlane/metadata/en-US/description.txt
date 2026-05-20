@@ -1,0 +1,24 @@
+Split the bill, keep it simple.
+
+SplitNow is a single-purpose split-bill app. No accounts, no
+groups, no IOUs, no balances. Scan a receipt, type freely who
+ordered what, and the AI does the rest. Share a receipt-card image
+with payment details in two taps.
+
+• Scan or skip. Point your camera at the receipt — on-device OCR
+  pulls the items. Or skip and type from scratch. Either way works.
+• Plain-English describe. "Anna had the pasta, Bob had pizza, we
+  shared garlic bread." That's the whole input. AI sorts it.
+• Tax + tip split modes. Proportional, equal, or skip. Pick once,
+  SplitNow remembers.
+• Multi-currency, IDR default. Detects the receipt's currency
+  automatically; override in Settings if needed.
+• Share a receipt card. One image, one share sheet. Send it to
+  the group chat and you're done.
+• Bank + e-wallet + QRIS. Add your payment methods once; they
+  embed on the share card so people know exactly how to pay you.
+• No accounts. No login. No analytics. The receipt photo never
+  leaves your phone — only the OCR text and your description do.
+
+Built by Devara Fikry Akmal at Devalab — a one-person studio of
+small, calm apps.

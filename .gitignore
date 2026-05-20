@@ -24,3 +24,10 @@ DerivedData/
 # Local dev keys
 local.properties
 *.local.xcconfig
+
+# Cloudflare wrangler local cache
+landing/.wrangler/
+
+# Fastlane runtime artifacts
+fastlane/report.xml
+fastlane/README.md

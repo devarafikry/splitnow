@@ -1,0 +1,125 @@
+# SplitNow fastlane config — canonical Devara four-lane pattern.
+# Reference: ~/.claude/skills/common-component-ios-fastlane-publish/SKILL.md §5
+default_platform(:ios)
+
+platform :ios do
+
+  # ── Lane 1: produce_app ────────────────────────────────────────────
+  desc "Create the App Store Connect record + register bundle ID."
+  lane :produce_app do |opts|
+    produce(
+      app_identifier: ENV['APP_IDENTIFIER'] || "com.devara.splitnow",
+      app_name:       opts[:app_name] || "SplitNow: Easy Bill Splitter",
+      language:       "English",
+      sku:            opts[:sku] || "splitnow-ios-1",
+      platforms:      opts[:platforms] || ["ios"],
+    )
+  end
+
+  # ── Lane 2: publish_new_app ────────────────────────────────────────
+  desc "Submit version 1.0 of SplitNow for App Store review."
+  lane :publish_new_app do
+    setup_ci if ENV['CI']
+
+    api_key = app_store_connect_api_key(
+      key_id:        ENV['APP_STORE_CONNECT_API_KEY_KEY_ID']    || "PHT8L76VY9",
+      issuer_id:     ENV['APP_STORE_CONNECT_API_KEY_ISSUER_ID'],
+      key_filepath:  ENV['ASC_API_KEY_P8_PATH']                 || File.expand_path("~/.appstoreconnect/private_keys/AuthKey_PHT8L76VY9.p8"),
+      in_house:      false,
+    )
+
+    # Release config → Manual signing + Apple Distribution + App Store profile.
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path:                  "iosApp/iosApp.xcodeproj",
+      team_id:               "ZKFF3LK7JP",
+      targets:               ["iosApp"],
+      code_sign_identity:    "Apple Distribution",
+      profile_name:          "com.devara.splitnow AppStore",
+      build_configurations:  ["Release"],
+    )
+
+    build_app(
+      project:          "iosApp/iosApp.xcodeproj",
+      scheme:           ENV['SCHEME'] || "iosApp",
+      configuration:    "Release",
+      export_method:    "app-store",
+      output_directory: "/tmp/com.devara.splitnow-ipa",
+      clean:            true,
+      export_options:   {
+        method:            "app-store",
+        signingStyle:      "manual",
+        teamID:            "ZKFF3LK7JP",
+        provisioningProfiles: {
+          "com.devara.splitnow" => "com.devara.splitnow AppStore",
+        },
+      },
+    )
+
+    deliver(
+      api_key:             api_key,
+      submit_for_review:   false,        # six-step tail does the submission
+      automatic_release:   false,
+      force:               true,
+      skip_screenshots:    false,
+      skip_metadata:       false,
+      precheck_include_in_app_purchases: false,
+    )
+
+    # MANDATORY six-step publish tail — see RECURRING-MISTAKES.md F5.
+    # `deliver` only uploads; these two scripts bring the version from
+    # PREPARE_FOR_SUBMISSION to WAITING_FOR_REVIEW.
+    sh "python3 #{File.expand_path('../finish_pricing.py', __FILE__)}"
+    sh "ruby   #{File.expand_path('../finish_submission.rb', __FILE__)}"
+  end
+
+  # ── Lane 3: publish_existing_app ───────────────────────────────────
+  desc "Submit a new version of SplitNow (existing app)."
+  lane :publish_existing_app do |opts|
+    setup_ci if ENV['CI']
+
+    plists = opts[:plist_paths] || ["iosApp/iosApp/Info.plist"]
+    plists.each { |p| increment_build_number_in_plist(plist_path: p) }
+
+    build_app(
+      project:          "iosApp/iosApp.xcodeproj",
+      scheme:           ENV['SCHEME'] || "iosApp",
+      configuration:    "Release",
+      export_method:    "app-store",
+      output_directory: "/tmp/com.devara.splitnow-ipa",
+      clean:            true,
+    )
+
+    deliver(
+      submit_for_review:   true,
+      automatic_release:   opts[:automatic_release] || false,
+      force:               true,
+      skip_screenshots:    opts[:skip_screenshots] || false,
+      skip_metadata:       opts[:skip_metadata] || false,
+      phased_release:      true,
+    )
+  end
+
+  # ── Lane 4: resubmit ───────────────────────────────────────────────
+  desc "Resubmit after rejection with a reviewer reply."
+  lane :resubmit do |opts|
+    if opts[:build_required]
+      build_app(
+        scheme:           ENV['SCHEME'] || "iosApp",
+        configuration:    "Release",
+        export_method:    "app-store",
+        output_directory: "/tmp/com.devara.splitnow-ipa",
+        clean:            true,
+      )
+    end
+
+    deliver(
+      submit_for_review:  true,
+      automatic_release:  false,
+      force:              true,
+      skip_screenshots:   opts[:metadata_only] || true,
+      skip_binary_upload: opts[:metadata_only] || false,
+    )
+  end
+
+end
